@@ -123,6 +123,9 @@ Each spec follows the old format: numbered rules (**Server** = it holds when the
 - **M4:** IDs. Integers are still fine.
 - **M5:** paging on a phone.
 
+**Carried into later specs** (from reviews):
+- **M5, from M0's `/code-review` (#4):** `PageParam.Parse` accepts pages up to `int.MaxValue`, so the offset `(page - 1) * pageSize` can overflow and return a 500 instead of an empty page. The M5 spec adds a rule and a test row (`?page=2147483647` shows the empty state), and computes the offset safely or caps the page.
+
 ---
 
 ## Testing
