@@ -2,7 +2,7 @@
 
 **Owner:** Claude writes the CI workflow, the README stub and the PR description, and runs the `gh` and `git push` commands, each after asking. Jonathan makes the decisions below and sets up branch protection himself in GitHub's settings, because it's the security control this milestone is about. M1's Claude Code skill is **drafting commits and PRs, and `/code-review` on a PR**.
 
-After M1, the code lives on GitHub, every pull request runs the same checks as the pre-commit hook, and nothing reaches `main` unless those checks pass. M0's branch becomes PR #1.
+After M1, the code lives on GitHub, every pull request runs the same checks as the pre-commit hook, and nothing reaches `main` unless those checks pass. M0's branch becomes PR #1, and M1's becomes PR #2, the first merge under protection.
 
 M1 is smaller than a usual milestone: probably a few hours. There's no database yet (M2) and no deployment (local only, by decision).
 
@@ -27,14 +27,19 @@ The hook is fast feedback on your machine, but it's optional: `--no-verify` skip
 
 ## Order of work
 
-The order matters because of one GitHub detail: **a check can only be made "required" after it has run at least once.** So the workflow goes in before the protection.
+The order matters because of two GitHub details:
+
+- **A check can only be made "required" after it has run at least once.**
+- **A pull request runs the workflow file from the PR's combined branches.** `ci.yml` only exists on `m1-github-ci`, so PR #1 (M0) has no CI run at all. Claude's first draft of this spec said CI would first run on PR #1; it can't.
+
+So M0 merges first, unchecked, and the M1 PR that adds CI is the first merge the gate controls.
 
 1. **Claude:** a new branch `m1-github-ci` off `m0-setup`, with this spec, `ci.yml`, `mobile/.nvmrc` and the README. Then a commit, after showing you `git status` and the message.
 2. **Claude, after asking:** `gh repo create` (decision A), push `main`, then push `m0-setup` and `m1-github-ci`.
-3. **Claude:** open **PR #1** (`m0-setup` → `main`) with a drafted description. CI runs on it for the first time, so the `API` and `Mobile` checks now exist.
-4. **🧑 You:** create a **ruleset** for `main` in GitHub (G8). I'll give the exact clicks. Rulesets are GitHub's current way to protect branches; the older "branch protection rules" page still works, but rulesets are what teams use now.
-5. **You:** run `/code-review` on PR #1, read the findings with me, then **merge PR #1** with your merge style (decision B).
-6. **Claude:** PR #2 for `m1-github-ci`, rebased onto the new `main`. The same flow: CI, review, you merge.
+3. **Claude:** open **PR #1** (`m0-setup` → `main`). It shows no checks, which is expected. **You** run `/code-review` on it, then squash-merge it. It's the only unchecked merge, made before protection exists, and every CI step was run locally against this code first.
+4. **Claude:** rebase `m1-github-ci` onto the new `main`, after asking (a rebase rewrites the branch's commits, so its push is a force push to the M1 branch, never to `main`). Then open **PR #2**. CI runs for the first time, so the `API` and `Mobile` checks now exist.
+5. **🧑 You:** create a **ruleset** for `main` in GitHub (G8). I'll give the exact clicks. Rulesets are GitHub's current way to protect branches; the older "branch protection rules" page still works, but rulesets are what teams use now.
+6. **You:** run `/code-review` on PR #2, read the findings with me, then squash-merge it, now under protection.
 7. **Both:** G9, the failing PR, to see the gate hold.
 
 ## Claude writes
