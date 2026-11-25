@@ -29,7 +29,16 @@ cd "$(git rev-parse --show-toplevel)"
 # or deleted (a deletion can break a build too).
 staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
 
-step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
+step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; ran_checks=true; }
+ran_checks=false
+
+# Nothing staged: there's nothing to check, and git will refuse the commit
+# right after this ("no changes added to commit"). Say so plainly instead of
+# reporting a pass. (Forgot `git add`? That's the usual cause.)
+if [[ -z "$staged" ]]; then
+  printf '\nNothing is staged, so no checks ran. Did you forget `git add`?\n'
+  exit 0
+fi
 
 # ---------- API (.NET) ----------
 # Only when something under api/, or a file that affects the .NET build,
@@ -63,4 +72,9 @@ if grep -qE '^mobile/' <<<"$staged"; then
   npm --prefix mobile run --silent test -- --ci
 fi
 
-printf '\n\033[1;32m✔ pre-commit checks passed\033[0m\n'
+if [[ "$ran_checks" == true ]]; then
+  printf '\n\033[1;32m✔ pre-commit checks passed\033[0m\n'
+else
+  # Staged files, but none in api/ or mobile/ (docs only, for example).
+  printf '\nNo API or mobile files staged, so no checks were needed.\n'
+fi
