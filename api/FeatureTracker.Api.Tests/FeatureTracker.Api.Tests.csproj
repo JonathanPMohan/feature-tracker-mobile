@@ -1,0 +1,38 @@
+﻿<!--
+  The test project. It's a separate project so test code and test packages
+  never ship with the API. Nullable, ImplicitUsings and warnings-as-errors
+  come from ../Directory.Build.props.
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- Not a library to publish to NuGet. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <!--
+    Packages (like devDependencies in package.json):
+    - xunit: the test framework ([Fact], [Theory], Assert)
+    - Microsoft.NET.Test.Sdk + xunit.runner.visualstudio: let `dotnet test`
+      and VS Code's test panel find and run xUnit tests
+    - coverlet.collector: code coverage, if we ever want it
+  -->
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <!-- Lets the tests use the API's code (PageParam, and later everything). -->
+  <ItemGroup>
+    <ProjectReference Include="..\FeatureTracker.Api\FeatureTracker.Api.csproj" />
+  </ItemGroup>
+
+  <!-- `using Xunit;` in every test file, so [Fact] and Assert just work. -->
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

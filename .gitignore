@@ -1,0 +1,47 @@
+# ---------- .NET ----------
+# Build output: recreated on every build, so it never belongs in git.
+# (Like .next/ in your Next.js project.)
+bin/
+obj/
+# Test results and coverage reports
+TestResults/
+*.trx
+coverage*.xml
+# Per-user IDE files: Visual Studio, Rider
+.vs/
+*.user
+*.suo
+.idea/
+
+# ---------- Node / Expo ----------
+node_modules/
+# Expo's local cache and generated files
+.expo/
+.expo-shared/
+dist/
+web-build/
+# Native folders, if someone runs `expo prebuild`. We use Expo Go, so they
+# should never exist; ignoring them means a stray prebuild can't be committed.
+mobile/ios/
+mobile/android/
+# Metro bundler and TypeScript caches
+*.tsbuildinfo
+.metro-health-check*
+npm-debug.log*
+yarn-error.log*
+
+# ---------- Secrets ----------
+# Every .env file is ignored. If we need a template later, it'll be named
+# .env.example and added with a `!.env.example` line below this one.
+.env*
+
+# ---------- OS / editors ----------
+.DS_Store
+*.swp
+.vscode/*
+# Shared VS Code settings can be committed later, one file at a time:
+# !.vscode/extensions.json
+
+# ---------- Claude Code ----------
+# .claude/settings.json is committed (decision B); personal overrides are not.
+.claude/settings.local.json
