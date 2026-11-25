@@ -25,18 +25,22 @@ set -euo pipefail
 # Run from the repo root, wherever `git commit` was typed.
 cd "$(git rev-parse --show-toplevel)"
 
-# The staged file names. --diff-filter=ACMRD: added, copied, modified, renamed
-# or deleted (a deletion can break a build too).
-staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
+# The staged file names. --diff-filter=ACMD: added, copied, modified or
+# deleted (a deletion can break a build too).
+# --no-renames: list a move as "deleted old path + added new path". Without
+# it, git shows only the new path, so moving a file OUT of api/ (to docs/,
+# say) would skip the API checks even though the build is now broken.
+staged="$(git diff --cached --name-only --no-renames --diff-filter=ACMD)"
 
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; ran_checks=true; }
 ran_checks=false
 
-# Nothing staged: there's nothing to check, and git will refuse the commit
-# right after this ("no changes added to commit"). Say so plainly instead of
-# reporting a pass. (Forgot `git add`? That's the usual cause.)
+# Nothing staged: there's nothing to check. Say so plainly instead of
+# reporting a pass. Usually git then refuses the commit ("no changes added to
+# commit": you forgot `git add`), but not always: `git commit --amend` to
+# reword a message, or `--allow-empty`, go through. So don't predict which.
 if [[ -z "$staged" ]]; then
-  printf '\nNothing is staged, so no checks ran. Did you forget `git add`?\n'
+  printf '\nNothing is staged, so no checks ran.\n'
   exit 0
 fi
 

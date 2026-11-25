@@ -11,7 +11,7 @@
       "Bash(dotnet --version)",
       "Bash(dotnet --list-sdks)",
       "Bash(npm test:*)",
-      "Bash(npm run test:*)",
+      "Bash(npm run test)",
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint)",
       "Bash(git status:*)",
@@ -25,6 +25,7 @@
       "Bash(dotnet tool:*)",
       "Bash(npm install:*)",
       "Bash(npx expo install:*)",
+      "Bash(npm run test:watch:*)",
       "Bash(git push:*)",
       "Bash(git reset:*)",
       "Bash(git clean:*)",
@@ -36,7 +37,8 @@
     ],
     "deny": [
       "Edit(~/Desktop/projects/feature-request-tracker/**)",
-      "Write(~/Desktop/projects/feature-request-tracker/**)"
+      "Write(~/Desktop/projects/feature-request-tracker/**)",
+      "NotebookEdit(~/Desktop/projects/feature-request-tracker/**)"
     ]
   }
 }

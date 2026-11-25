@@ -52,7 +52,7 @@ Also check that Expo Go is on your iPhone.
 
 | File                                                          | What                                                     |
 | ------------------------------------------------------------- | -------------------------------------------------------- |
-| `global.json`, `.config/dotnet-tools.json`                    | Pin SDK 10 (Z2) and `dotnet-ef` 10 as a local tool       |
+| `global.json`, `dotnet-tools.json` (🧑 ran the commands; SDK 10 puts it at the root) | Pin SDK 10 (Z2) and `dotnet-ef` 10 as a local tool       |
 | `api/Directory.Build.props`                                   | Nullable and warnings as errors for every project (Z3)   |
 | `api/FeatureTracker.Api/Program.cs`                           | The `GET /` endpoint, explained line by line (Z4)        |
 | `api/FeatureTracker.Api/Paging/PageParam.cs`                  | `PageParam.Parse` (Z5)                                   |
