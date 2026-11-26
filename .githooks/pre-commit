@@ -44,10 +44,18 @@ if [[ -z "$staged" ]]; then
   exit 0
 fi
 
+# A change to this hook itself runs every check below, so a broken hook
+# can't be committed untested.
+hook_changed=false
+if grep -qE '^\.githooks/' <<<"$staged"; then
+  hook_changed=true
+fi
+
 # ---------- API (.NET) ----------
-# Only when something under api/, or a file that affects the .NET build,
-# is in the commit. A docs-only commit skips this part.
-if grep -qE '^(api/|global\.json$|\.editorconfig$)' <<<"$staged"; then
+# Only when something under api/, or a file that affects the .NET build or
+# tools, is in the commit. A docs-only commit skips this part.
+if [[ "$hook_changed" == true ]] ||
+  grep -qE '^(api/|global\.json$|dotnet-tools\.json$|\.editorconfig$)' <<<"$staged"; then
   step "API: formatting (dotnet format)"
   # --verify-no-changes: report problems and fail, but change nothing.
   # To fix them, run:  dotnet format api/FeatureTracker.slnx
@@ -64,7 +72,7 @@ if grep -qE '^(api/|global\.json$|\.editorconfig$)' <<<"$staged"; then
 fi
 
 # ---------- Mobile (Expo) ----------
-if grep -qE '^mobile/' <<<"$staged"; then
+if [[ "$hook_changed" == true ]] || grep -qE '^mobile/' <<<"$staged"; then
   step "Mobile: type check (tsc)"
   npm --prefix mobile run --silent typecheck
 

@@ -12,6 +12,10 @@
 // In Next.js, the framework did both for you from the folder structure. Here
 // they're explicit, which is why every new feature starts with a line here.
 
+// ApiInfo lives in the FeatureTracker.Api namespace (ApiInfo.cs). This file
+// can't declare a namespace, so it imports that one.
+using FeatureTracker.Api;
+
 // ---------- 1. Build: register services ----------
 
 // CreateBuilder reads configuration from appsettings.json, then
@@ -40,15 +44,3 @@ app.MapGet("/", () => new ApiInfo("Feature Tracker API"));
 // Start the web server and block until it's stopped (Ctrl+C). The address
 // comes from Properties/launchSettings.json in development: localhost:5080.
 app.Run();
-
-// ---------- Types ----------
-
-/// <summary>The response of <c>GET /</c>.</summary>
-/// <remarks>
-/// A <c>record</c> is a class made for holding data: this one line declares
-/// a type with a read-only <c>Name</c> property and a constructor, and two
-/// records with the same values are equal. The TypeScript equivalent is
-/// <c>type ApiInfo = { readonly name: string }</c>. Types in this file must
-/// come after the top-level statements.
-/// </remarks>
-internal sealed record ApiInfo(string Name);

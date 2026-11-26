@@ -11,7 +11,7 @@ A .NET API and an Expo mobile app for the feature request board. Jonathan is reb
 - **Jonathan runs installs himself.** Give him the command and what it does.
 - **Claude makes the git commits.** Before each one, show `git status` and the exact commit message. **Never push without asking.**
 - Ask first before installing packages, running migrations, pushing, anything on GitHub, or deleting files.
-- **`~/Desktop/projects/feature-request-tracker` is read-only.** Read its docs for reference; never create, edit or delete anything there. `.claude/settings.json` denies the Edit, Write and NotebookEdit tools there. Shell commands can't be blocked by path reliably, so never aim a writing command (`sed -i`, `mv`, `cp`, `>`, `npm install`) at that folder; the approval prompt is only the last line of defense.
+- **`~/Desktop/projects/feature-request-tracker` is read-only.** Read its docs for reference; never create, edit or delete anything there. `.claude/settings.json` denies the Edit, Write and NotebookEdit tools there. Shell commands can't be blocked by path reliably, so never aim a writing command (`sed -i`, `mv`, `cp`, `>`, `npm install`) at that folder; the approval prompt is only the last line of defense. Some allowed read commands can write too: never pass `--output` to `git diff`, `git show` or `git log`, and never `-u` (update snapshots) to tests without asking.
 - Product rules and Jonathan's earlier decisions carry over from that project's specs unless a spec here says otherwise.
 
 ## The endpoint order (every write endpoint)
