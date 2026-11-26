@@ -1,0 +1,14 @@
+<!--
+  The API project. "Microsoft.NET.Sdk.Web" adds ASP.NET Core (the web
+  framework) on top of the plain .NET SDK. Nullable, ImplicitUsings and
+  warnings-as-errors come from ../Directory.Build.props.
+-->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <!-- Which .NET this compiles for. global.json picks the SDK (the tools);
+         this picks the runtime the app runs on. Both say 10. -->
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

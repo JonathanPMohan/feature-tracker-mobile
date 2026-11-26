@@ -1,0 +1,103 @@
+# EditorConfig: formatting rules that editors and tools read.
+# VS Code (with C# Dev Kit) follows it as you type, and `dotnet format` checks
+# against it in the pre-commit hook. It plays the role of .prettierrc and the
+# style half of your ESLint config, for C#.
+#
+# Settings apply to the files matched by the [section] they're in. Later
+# sections override earlier ones.
+
+# Stop looking in parent folders for more .editorconfig files.
+root = true
+
+# ---------- Every file ----------
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Markdown: two trailing spaces mean a line break, so keep them.
+[*.md]
+trim_trailing_whitespace = false
+
+# ---------- C# ----------
+[*.cs]
+# C# convention is 4 spaces (TypeScript's is 2).
+indent_size = 4
+
+# Rules below are "option = value:severity". Severity "warning" is what makes
+# `dotnet format --verify-no-changes` fail on them. They don't fail the build
+# (that would need EnforceCodeStyleInBuild); the hook is the gate.
+
+# One namespace per file, declared at the top without braces:
+#   namespace FeatureTracker.Api.Paging;
+# instead of wrapping the whole file in `namespace X { ... }`.
+csharp_style_namespace_declarations = file_scoped:warning
+
+# `using` lines (C#'s imports) go outside the namespace, with System.* first.
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+
+# `var` is allowed when the type is obvious from the right-hand side,
+# like `const` without a type annotation in TypeScript:
+#   var user = new User();   // obviously a User
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+
+# Braces on their own line (the C# convention; TypeScript puts them at the
+# end of the line). Always use braces, even for one-line `if` bodies.
+csharp_new_line_before_open_brace = all
+csharp_prefer_braces = true:warning
+
+# Prefer `is null` over `== null`: it can't be fooled by a custom == operator.
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+
+# Remove `using` lines that nothing uses (like an unused import).
+dotnet_diagnostic.IDE0005.severity = warning
+
+# ---------- Naming ----------
+# Private fields start with an underscore: _db, _clock.
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel_case
+dotnet_naming_rule.private_fields_underscore.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+# ...except constants and static readonly fields, which are PascalCase:
+#   private const int MaxPageSize = 50;
+#   private static readonly TimeSpan Window = TimeSpan.FromHours(1);
+# These win over the underscore rule because they're more specific: same
+# accessibility (private), plus required modifiers. The order of rules in
+# this file doesn't matter; .NET sorts them by how specific they are.
+dotnet_naming_rule.private_constants_pascal.symbols = private_constants
+dotnet_naming_rule.private_constants_pascal.style = pascal_case
+dotnet_naming_rule.private_constants_pascal.severity = warning
+dotnet_naming_symbols.private_constants.applicable_kinds = field
+dotnet_naming_symbols.private_constants.applicable_accessibilities = private
+dotnet_naming_symbols.private_constants.required_modifiers = const
+
+dotnet_naming_rule.private_static_readonly_pascal.symbols = private_static_readonly
+dotnet_naming_rule.private_static_readonly_pascal.style = pascal_case
+dotnet_naming_rule.private_static_readonly_pascal.severity = warning
+dotnet_naming_symbols.private_static_readonly.applicable_kinds = field
+dotnet_naming_symbols.private_static_readonly.applicable_accessibilities = private
+dotnet_naming_symbols.private_static_readonly.required_modifiers = static, readonly
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# Interfaces start with I: IClock, IRateLimiter.
+dotnet_naming_rule.interfaces_start_with_i.symbols = interfaces
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_rule.interfaces_start_with_i.severity = warning
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+dotnet_naming_style.prefix_i.required_prefix = I
+
+# ---------- Project and solution files ----------
+[*.{csproj,props,targets,slnx}]
+indent_size = 2

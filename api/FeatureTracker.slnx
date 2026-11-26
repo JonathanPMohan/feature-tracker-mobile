@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FeatureTracker.Api.Tests/FeatureTracker.Api.Tests.csproj" />
+  <Project Path="FeatureTracker.Api/FeatureTracker.Api.csproj" />
+</Solution>

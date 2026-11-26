@@ -1,0 +1,34 @@
+<!--
+  Directory.Build.props: settings shared by every project in this folder and
+  below. MSBuild (.NET's build engine) finds it automatically by walking up
+  from each .csproj, so neither project has to import it.
+
+  Think of it as a shared tsconfig.json that every project "extends", except
+  nothing has to opt in. Settings that differ per project (like
+  TargetFramework) stay in each .csproj.
+-->
+<Project>
+  <PropertyGroup>
+    <!--
+      Nullable reference types: `string` can never be null, `string?` can.
+      The compiler warns wherever a possible null isn't handled, the same way
+      TypeScript's strictNullChecks flags `string | null`.
+    -->
+    <Nullable>enable</Nullable>
+
+    <!--
+      Implicit usings: common namespaces (System, System.Linq,
+      System.Threading.Tasks, and for the web project Microsoft.AspNetCore.*)
+      are imported in every file, so files don't start with a dozen `using`
+      lines. You'll see the ones that aren't implicit at the top of files.
+    -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!--
+      Every warning stops the build. Together with Nullable, this is the C#
+      version of "strict": true. An unhandled null is a compile error, not a
+      crash at runtime.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

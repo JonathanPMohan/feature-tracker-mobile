@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook (M0, rule Z8). Git runs this before every commit. If any
+# check fails, the script exits with a non-zero code and git cancels the
+# commit, so code that doesn't format, type-check, lint or pass its unit tests
+# never reaches the history.
+#
+# Installed once per clone with:   git config core.hooksPath .githooks
+# Git then looks for hooks in this folder instead of .git/hooks/, which isn't
+# committed. That's why the hook is a plain file in the repo, and why your old
+# project didn't need Husky to share it.
+#
+# Fast and Docker-free on purpose: unit tests only. Integration tests (M2+)
+# need a database and run in CI.
+#
+# Emergency skip (avoid it):   git commit --no-verify
+#
+# Known limit: the checks run on the files in your working folder, not only
+# on what's staged. If you staged part of a change, the hook checks all of it.
+
+# Stop at the first failing command (-e), treat unset variables as errors (-u),
+# and make a pipeline fail if any part of it fails (-o pipefail).
+set -euo pipefail
+
+# Run from the repo root, wherever `git commit` was typed.
+cd "$(git rev-parse --show-toplevel)"
+
+# The staged file names. --diff-filter=ACMD: added, copied, modified or
+# deleted (a deletion can break a build too).
+# --no-renames: list a move as "deleted old path + added new path". Without
+# it, git shows only the new path, so moving a file OUT of api/ (to docs/,
+# say) would skip the API checks even though the build is now broken.
+staged="$(git diff --cached --name-only --no-renames --diff-filter=ACMD)"
+
+step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; ran_checks=true; }
+ran_checks=false
+
+# Nothing staged: there's nothing to check. Say so plainly instead of
+# reporting a pass. Usually git then refuses the commit ("no changes added to
+# commit": you forgot `git add`), but not always: `git commit --amend` to
+# reword a message, or `--allow-empty`, go through. So don't predict which.
+if [[ -z "$staged" ]]; then
+  printf '\nNothing is staged, so no checks ran.\n'
+  exit 0
+fi
+
+# A change to this hook itself runs every check below, so a broken hook
+# can't be committed untested.
+hook_changed=false
+if grep -qE '^\.githooks/' <<<"$staged"; then
+  hook_changed=true
+fi
+
+# ---------- API (.NET) ----------
+# Only when something under api/, or a file that affects the .NET build or
+# tools, is in the commit. A docs-only commit skips this part.
+if [[ "$hook_changed" == true ]] ||
+  grep -qE '^(api/|global\.json$|dotnet-tools\.json$|\.editorconfig$)' <<<"$staged"; then
+  step "API: formatting (dotnet format)"
+  # --verify-no-changes: report problems and fail, but change nothing.
+  # To fix them, run:  dotnet format api/FeatureTracker.slnx
+  dotnet format api/FeatureTracker.slnx --verify-no-changes
+
+  step "API: unit tests (dotnet test)"
+  # Unit tests only: the ones in the FeatureTracker.Api.Tests.Unit namespace
+  # (the Unit/ folder). --filter "FullyQualifiedName~X" means "the test's
+  # full name contains X". The build also checks types: with warnings as
+  # errors, any nullability warning fails here.
+  dotnet test api/FeatureTracker.slnx \
+    --filter "FullyQualifiedName~FeatureTracker.Api.Tests.Unit." \
+    --verbosity quiet --nologo
+fi
+
+# ---------- Mobile (Expo) ----------
+if [[ "$hook_changed" == true ]] || grep -qE '^mobile/' <<<"$staged"; then
+  step "Mobile: type check (tsc)"
+  npm --prefix mobile run --silent typecheck
+
+  step "Mobile: lint (expo lint)"
+  npm --prefix mobile run --silent lint
+
+  step "Mobile: tests (jest)"
+  # --ci: never write snapshots, fail instead. Good for a gate.
+  npm --prefix mobile run --silent test -- --ci
+fi
+
+if [[ "$ran_checks" == true ]]; then
+  printf '\n\033[1;32m✔ pre-commit checks passed\033[0m\n'
+else
+  # Staged files, but none in api/ or mobile/ (docs only, for example).
+  printf '\nNo API or mobile files staged, so no checks were needed.\n'
+fi
