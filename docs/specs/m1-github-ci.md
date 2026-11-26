@@ -37,21 +37,38 @@ So M0 merges first, unchecked, and the M1 PR that adds CI is the first merge the
 1. **Claude:** a new branch `m1-github-ci` off `m0-setup`, with this spec, `ci.yml`, `mobile/.nvmrc` and the README. Then a commit, after showing you `git status` and the message.
 2. **Claude, after asking:** `gh repo create` (decision A), push `main`, then push `m0-setup` and `m1-github-ci`.
 3. **Claude:** open **PR #1** (`m0-setup` → `main`). It shows no checks, which is expected. **You** run `/code-review` on it, then squash-merge it. It's the only unchecked merge, made before protection exists, and every CI step was run locally against this code first.
-4. **Claude:** rebase `m1-github-ci` onto the new `main`, after asking (a rebase rewrites the branch's commits, so its push is a force push to the M1 branch, never to `main`). Then open **PR #2**. CI runs for the first time, so the `API` and `Mobile` checks now exist.
+4. **Claude:** move `m1-github-ci` onto the new `main`, after asking, and replay **only M1's commits**:
+   ```
+   git rebase --onto main <M1's fork point> m1-github-ci
+   ```
+   The fork point is the last M0 commit that M1 was branched from (`a3f15a7` here). Record it before the merge, because `--delete-branch` removes `m0-setup`. A plain `git rebase main` would fail: after a **squash** merge, `main` holds M0 as one new commit, so git would try to replay M0's original commits on top of their own squashed copy and stop on conflicts. Any stacked branch needs this after a squash merge.
+
+   A rebase rewrites the branch's commits, so the push is `git push --force-with-lease` to the M1 branch, never to `main`. `--force-with-lease` refuses if someone else pushed to that branch meanwhile. Then open **PR #2**. CI runs for the first time, so the `API` and `Mobile` checks now exist.
 5. **🧑 You:** create a **ruleset** for `main` in GitHub (G8). I'll give the exact clicks. Rulesets are GitHub's current way to protect branches; the older "branch protection rules" page still works, but rulesets are what teams use now.
 6. **You:** run `/code-review` on PR #2, read the findings with me, then squash-merge it, now under protection.
 7. **Both:** G9, the failing PR, to see the gate hold.
 
-## Claude writes
+## Who writes what
 
-| File                       | What                                                                      |
-| -------------------------- | ------------------------------------------------------------------------- |
-| `.github/workflows/ci.yml` | The two jobs, explained line by line in comments                          |
-| `mobile/.nvmrc`            | The Node version for CI (and for `nvm use` on your Mac)                   |
-| `README.md`                | G10                                                                       |
-| PR descriptions            | What changed, why, how it was tested, plus Claude Code's attribution line |
+| File or task               | What                                                                      | Who         |
+| -------------------------- | ------------------------------------------------------------------------- | ----------- |
+| `.github/workflows/ci.yml` | The two jobs, explained line by line in comments                          | Claude      |
+| `mobile/.nvmrc`            | The Node version for CI (and for `nvm use` on your Mac)                   | Claude      |
+| `README.md`                | G10                                                                       | Claude      |
+| PR descriptions            | What changed, why, how it was tested, plus Claude Code's attribution line | Claude      |
+| `gh` commands, pushes, merges | Each one after asking                                                  | Claude      |
+| The `main` ruleset         | G8, in GitHub's settings                                                  | 🧑 Jonathan |
+| Decisions A–D              | Below                                                                     | 🧑 Jonathan |
 
-No new tests: M1 runs the existing ones in a new place.
+### 🧑 Your pieces
+
+No code this milestone. Your pieces are the four decisions and the ruleset (G8): the one security control here, set by hand so you know exactly what it enforces.
+
+## Tests
+
+No new test files: M1 runs the existing tests (17 API, 1 mobile) in a new place. The milestone's real test is **G9**: a deliberately failing PR that CI must turn red and the ruleset must refuse to merge.
+
+**Typed routes in CI:** Expo Router generates its route types (`.expo/types/router.d.ts`) only when the dev server starts, and they're gitignored, so a clean CI checkout wouldn't have them, and a link to a misspelled route would type-check. The `typecheck` script therefore runs `expo customize tsconfig.json` first, which Expo's docs give as the way to generate the types without the dev server. Verified: on a clean checkout, `<Link href="/featres">` passes `tsc` without it and fails with it.
 
 ## Coming from Next.js
 

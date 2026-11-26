@@ -23,11 +23,16 @@ on:
 permissions:
   contents: read
 
-# One run per branch at a time (G7). A new push to a PR cancels the run for the
-# older commit, which nobody needs anymore. Runs on main are never cancelled,
-# so every commit on main gets a complete result.
+# Concurrency (G7). Runs in the same "group" share a queue, and GitHub keeps
+# at most ONE pending run per group: a newer pending run always replaces an
+# older pending one, whatever cancel-in-progress says.
+# - PRs: one group per branch, and a new push cancels the old run, which
+#   nobody needs anymore.
+# - main: one group per COMMIT (github.sha), so runs never queue behind each
+#   other and every commit on main gets its own complete result. (With one
+#   group for main, three quick merges would drop the middle one's run.)
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -99,6 +104,10 @@ jobs:
       - name: Install
         run: npm ci
 
+      # The typecheck script first generates Expo Router's route types
+      # (`expo customize tsconfig.json`), which are gitignored and so missing
+      # from this fresh checkout. Without them, a link to a misspelled route
+      # would type-check here even though it fails on your Mac.
       - name: Type check
         run: npm run typecheck
 
