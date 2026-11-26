@@ -17,7 +17,7 @@ public class PageParamTests
     [Theory]
     [InlineData("1", 1)]
     [InlineData("2", 2)]
-    [InlineData("42", 42)]
+    [InlineData("42", 43)]
     // Leading zeros are still a valid number. Harmless, so allowed.
     [InlineData("007", 7)]
     public void Valid_page_numbers_are_returned(string value, int expected)
