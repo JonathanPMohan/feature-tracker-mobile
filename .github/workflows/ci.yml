@@ -1,0 +1,119 @@
+# CI: the enforced gate (M1). GitHub runs this on its own machines for every
+# pull request to main and every push to main. Branch protection (the
+# ruleset on main) requires both jobs below to pass before a PR can merge.
+#
+# Same checks as .githooks/pre-commit, with two differences:
+#   - it can't be skipped (no --no-verify on GitHub's side)
+#   - both jobs always run, whatever files changed (rule G5)
+#
+# YAML basics: indentation is structure (spaces only, never tabs), `key: value`
+# pairs, and `- ` starts a list item. ${{ ... }} is a GitHub expression,
+# filled in when the workflow runs.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Least privilege (G7): this workflow can read the code and nothing else. It
+# can't push, comment, or change settings, even if a step were compromised.
+permissions:
+  contents: read
+
+# Concurrency (G7). Runs in the same "group" share a queue, and GitHub keeps
+# at most ONE pending run per group: a newer pending run always replaces an
+# older pending one, whatever cancel-in-progress says.
+# - PRs: one group per branch, and a new push cancels the old run, which
+#   nobody needs anymore.
+# - main: one group per COMMIT (github.sha), so runs never queue behind each
+#   other and every commit on main gets its own complete result. (With one
+#   group for main, three quick merges would drop the middle one's run.)
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ---------- API (.NET) ----------
+  api:
+    # G6: the ruleset requires this check BY NAME. Renaming it ("API tests")
+    # would make the required check disappear and silently unprotect main.
+    name: API
+    runs-on: ubuntu-latest # a fresh Linux VM for each run, with Docker (M2's Testcontainers)
+    timeout-minutes: 15
+    env:
+      DOTNET_NOLOGO: true # no welcome banner in the logs
+      DOTNET_CLI_TELEMETRY_OPTOUT: true # don't send usage data from CI
+    steps:
+      # Copy the repo onto the VM. Without this, the machine is empty.
+      - uses: actions/checkout@v7
+
+      # Install the .NET SDK named in global.json (10.0.x), the same one your
+      # Mac uses. One source of truth: bump global.json, and CI follows.
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # Install the repo's local tools (dotnet-tools.json: dotnet-ef 10).
+      # Not used until M2, but this proves the manifest works on a clean machine.
+      - name: Restore tools
+        run: dotnet tool restore
+
+      # Download NuGet packages once; the steps below then skip it.
+      - name: Restore packages
+        run: dotnet restore api/FeatureTracker.slnx
+
+      - name: Check formatting
+        run: dotnet format api/FeatureTracker.slnx --verify-no-changes --no-restore
+
+      # Warnings are errors (Directory.Build.props), so this step also fails on
+      # any nullability warning.
+      - name: Build
+        run: dotnet build api/FeatureTracker.slnx --no-restore --configuration Release
+
+      # ALL tests, not only Unit/ as in the hook (G3). From M2, that includes
+      # the integration tests against a real Postgres.
+      - name: Test
+        run: dotnet test api/FeatureTracker.slnx --no-build --configuration Release
+
+  # ---------- Mobile (Expo) ----------
+  mobile:
+    name: Mobile # G6: required by name, like API
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: mobile # every `run:` below starts in mobile/
+    steps:
+      - uses: actions/checkout@v7
+
+      # Node from mobile/.nvmrc (decision D: 26, matching your Mac).
+      # cache: npm keeps npm's download cache between runs, keyed on
+      # package-lock.json, so unchanged dependencies download once.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: mobile/.nvmrc
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      # `npm ci`, not `npm install`: it installs exactly what package-lock.json
+      # says, and fails if package.json and the lock file disagree. CI should
+      # test what's committed, never quietly upgrade anything.
+      - name: Install
+        run: npm ci
+
+      # The typecheck script first generates Expo Router's route types
+      # (`expo customize tsconfig.json`), which are gitignored and so missing
+      # from this fresh checkout. Without them, a link to a misspelled route
+      # would type-check here even though it fails on your Mac.
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # --ci: fail instead of writing a new snapshot.
+      - name: Test
+        run: npm test -- --ci
