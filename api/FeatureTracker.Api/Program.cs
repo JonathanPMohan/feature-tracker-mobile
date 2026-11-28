@@ -15,6 +15,8 @@
 // ApiInfo lives in the FeatureTracker.Api namespace (ApiInfo.cs). This file
 // can't declare a namespace, so it imports that one.
 using FeatureTracker.Api;
+using FeatureTracker.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 // ---------- 1. Build: register services ----------
 
@@ -24,7 +26,38 @@ using FeatureTracker.Api;
 // `args` are the command-line arguments, available here automatically.
 var builder = WebApplication.CreateBuilder(args);
 
-// (M2 adds the database here, M3 adds auth: builder.Services.Add...)
+// The database (M2, B2–B4). AddDbContext registers AppDbContext as a scoped
+// service: one instance per HTTP request, handed to any endpoint that lists
+// it as a parameter (primer, section 7).
+//
+// The lambda runs when an AppDbContext is first needed, not now. So the
+// connection string is read late, after every configuration source is
+// loaded, including the one the integration tests add to point at their
+// Testcontainers database (B12). `sp` is the service provider: the container
+// of registered services, from which IConfiguration is read.
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+{
+    // ConnectionStrings:Default, from appsettings.Development.json on your
+    // Mac (decision B) or from the tests. GetConnectionString returns null
+    // if it's missing, and `??` turns that into a clear error instead of a
+    // confusing one deep inside Npgsql.
+    var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")
+        ?? throw new InvalidOperationException(
+            "Missing connection string 'ConnectionStrings:Default'. " +
+            "In development it's in appsettings.Development.json.");
+
+    options
+        .UseNpgsql(connectionString) // Postgres, through Npgsql
+        .UseSnakeCaseNamingConvention(); // FeatureRequest.AuthorId → feature_request.author_id (decision C)
+});
+
+// Health checks (B7–B9): ASP.NET Core's built-in system. AddDbContextCheck
+// asks EF Core "can you connect?" (it runs a trivial query).
+builder.Services
+    .AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>();
+
+// (M3 adds auth here.)
 
 var app = builder.Build();
 
@@ -40,6 +73,12 @@ var app = builder.Build();
 // response is  {"name":"Feature Tracker API"}  with Content-Type
 // application/json, and status 200.
 app.MapGet("/", () => new ApiInfo("Feature Tracker API"));
+
+// GET /health (B7–B9): 200 "Healthy" when every registered check passes,
+// 503 "Unhealthy" when one fails. The default response is just that one
+// word, on purpose: no connection string, host or error message, because
+// this endpoint is public (B9). The details go to the server's log instead.
+app.MapHealthChecks("/health");
 
 // Start the web server and block until it's stopped (Ctrl+C). The address
 // comes from Properties/launchSettings.json in development: localhost:5080.

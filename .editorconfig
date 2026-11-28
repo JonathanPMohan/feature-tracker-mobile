@@ -98,6 +98,15 @@ dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_style.prefix_i.capitalization = pascal_case
 dotnet_naming_style.prefix_i.required_prefix = I
 
+# ---------- EF Core migrations (generated) ----------
+# `dotnet ef migrations add` writes these files in its own style: a byte
+# order mark, `namespace X { ... }` blocks, `#nullable disable`. Marking them
+# as generated code makes `dotnet format` (the pre-commit hook and CI) skip
+# them, so the tool's output is committed exactly as written. Never reformat
+# or hand-edit them: a fix is a new migration (CLAUDE.md, M2 decision D).
+[**/Data/Migrations/*.cs]
+generated_code = true
+
 # ---------- Project and solution files ----------
 [*.{csproj,props,targets,slnx}]
 indent_size = 2

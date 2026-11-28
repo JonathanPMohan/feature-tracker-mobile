@@ -11,4 +11,24 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
+  <!--
+    Packages (M2). Exact versions, not "10.*": a range would let CI resolve a
+    newer 10.x than your Mac, so the two could test different code. All stay
+    on 10.x: the 11.0 versions need .NET 11.
+    - Npgsql.EntityFrameworkCore.PostgreSQL: EF Core + the Postgres driver
+    - Microsoft.EntityFrameworkCore.Design: what `dotnet ef` needs to read
+      the model. PrivateAssets="all" keeps it out of the built app.
+    - EFCore.NamingConventions: snake_case names in Postgres (decision C)
+    - ...HealthChecks.EntityFrameworkCore: the database check behind /health
+  -->
+  <ItemGroup>
+    <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.4" />
+  </ItemGroup>
+
 </Project>

@@ -9,6 +9,8 @@
 //                     <View> is an error, unlike in a <div>
 import { StyleSheet, Text, View } from "react-native";
 
+import { ApiStatus } from "@/components/ApiStatus";
+
 // A route file's default export is the screen, as in Next.js.
 export default function HomeScreen() {
   return (
@@ -20,6 +22,8 @@ export default function HomeScreen() {
         Feature Tracker
       </Text>
       <Text style={styles.subtitle}>Feature requests, on your phone.</Text>
+      {/* M2: can the phone reach the API? */}
+      <ApiStatus />
     </View>
   );
 }
