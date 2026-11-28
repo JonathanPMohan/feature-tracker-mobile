@@ -43,9 +43,12 @@ Run these from the repo root unless noted.
 | What                | Command                                                                 |
 | ------------------- | ----------------------------------------------------------------------- |
 | Run the API         | `dotnet run --project api/FeatureTracker.Api` → http://localhost:5080   |
-| API tests           | `dotnet test api/FeatureTracker.slnx`                                   |
+| API tests           | `dotnet test api/FeatureTracker.slnx` (integration tests need Docker running) |
 | API unit tests only | `dotnet test api/FeatureTracker.slnx --filter "FullyQualifiedName~FeatureTracker.Api.Tests.Unit."` |
 | Fix C# formatting   | `dotnet format api/FeatureTracker.slnx`                                 |
+| Dev database        | `docker compose up -d` (Postgres 18 on `localhost:5433`), `docker compose stop` |
+| New migration       | `dotnet ef migrations add <Name> --project api/FeatureTracker.Api --output-dir Data/Migrations` (Jonathan runs it) |
+| Apply migrations    | `dotnet ef database update --project api/FeatureTracker.Api` (Jonathan runs it) |
 | Run the app         | `cd mobile && npx expo start`, then scan the QR code with the iPhone    |
 | App checks          | `cd mobile && npm run typecheck && npm run lint && npm test`            |
 | Add an app package  | `cd mobile && npx expo install <pkg>` (never `npm install <pkg>`: Expo picks SDK-compatible versions) |
@@ -53,6 +56,7 @@ Run these from the repo root unless noted.
 ## Conventions
 
 - **C#:** nullable reference types on and warnings as errors (`api/Directory.Build.props`). Style comes from `.editorconfig`: file-scoped namespaces, `_camelCase` private fields, braces always. Namespaces match folders.
-- **Tests:** unit tests go in the `FeatureTracker.Api.Tests.Unit` namespace (the pre-commit hook selects them by name). Test names read as sentences: `Anything_else_means_the_first_page`. Reference the old project's rule IDs (S3, V4, …) where a test proves one.
+- **Tests:** unit tests go in the `FeatureTracker.Api.Tests.Unit` namespace (the pre-commit hook selects them by name). Integration tests go in `…Tests.Integration` and join `[Collection(PostgresCollection.Name)]`. They call the API through `fixture.Factory.CreateClient()`, check the database through a scope from `fixture.Factory.Services`, and create their own `ApiFactory` only when they need different configuration (like `HealthTests`' unreachable database). Test names read as sentences: `Anything_else_means_the_first_page`. Reference the old project's rule IDs (S3, V4, …) where a test proves one.
+- **Migrations:** never edit an existing file in `Data/Migrations/` (a Claude Code hook in `.claude/settings.json` blocks it). Fix a migration with a new one.
 - **Expo:** SDK 58. APIs change between SDKs, so check the versioned docs rather than memory; `mobile/AGENTS.md` explains how.
 - **Specs** follow the old project's format: numbered rules (**Server** = it holds even when the UI is skipped), Who writes what, Your pieces, Tests, Decisions with "Jonathan's decisions", Out of scope, and Coming from Next.js.

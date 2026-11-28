@@ -1,0 +1,44 @@
+# The dev database (M2, rule B1). Start it with `docker compose up -d`,
+# stop it with `docker compose stop`. Data survives both.
+#
+# Tests don't use this: Testcontainers starts its own throwaway Postgres from
+# the same image (B11), so tests never touch your dev data.
+
+services:
+  db:
+    # Postgres 18 (decision A). The tag pins the major version: `docker compose
+    # pull` brings bug-fix releases (18.x), never a new major version, which
+    # would need a data upgrade. Testcontainers uses the same tag.
+    image: postgres:18
+
+    environment:
+      POSTGRES_USER: postgres
+      # Local-only password (decision B): this container only listens on your
+      # Mac (127.0.0.1 below), so the password protects nothing reachable from
+      # outside. Real secrets never go in this repo.
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: feature_tracker # created on first start
+
+    ports:
+      # host:container. Host port 5433, because your old tracker's database
+      # already uses 5432 and both should be able to run at once.
+      # 127.0.0.1 means only this Mac can connect, not other devices on
+      # your Wi-Fi. (The phone talks to the API, never to the database.)
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      # A named volume: Docker stores the data outside the container, so it
+      # survives `docker compose down` and image upgrades.
+      # `docker compose down -v` deletes it (a fresh, empty database).
+      - db-data:/var/lib/postgresql
+
+    # `docker compose ps` shows "healthy" once Postgres accepts connections.
+    # pg_isready is Postgres's own "are you up?" check.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d feature_tracker"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  db-data:

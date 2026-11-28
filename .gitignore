@@ -31,9 +31,10 @@ npm-debug.log*
 yarn-error.log*
 
 # ---------- Secrets ----------
-# Every .env file is ignored. If we need a template later, it'll be named
-# .env.example and added with a `!.env.example` line below this one.
+# Every .env file is ignored, except templates named .env.example (which
+# hold placeholders, never real values).
 .env*
+!.env.example
 
 # ---------- OS / editors ----------
 .DS_Store
