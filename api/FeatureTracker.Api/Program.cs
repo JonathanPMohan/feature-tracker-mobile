@@ -81,5 +81,7 @@ app.MapGet("/", () => new ApiInfo("Feature Tracker API"));
 app.MapHealthChecks("/health");
 
 // Start the web server and block until it's stopped (Ctrl+C). The address
-// comes from Properties/launchSettings.json in development: localhost:5080.
+// comes from Properties/launchSettings.json in development: 0.0.0.0:5080,
+// meaning every network interface, not only localhost, so the phone on your
+// Wi-Fi can reach it (B14).
 app.Run();

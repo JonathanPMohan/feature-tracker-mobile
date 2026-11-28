@@ -30,18 +30,28 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     private readonly PostgreSqlContainer _container = new PostgreSqlBuilder(PostgresImage).Build();
 
-    // `= null!` says "this starts null, but InitializeAsync sets it before
-    // any test runs". The `!` is the nullable escape hatch from the primer,
-    // used here because xUnit guarantees the order.
-    public ApiFactory Factory { get; private set; } = null!;
+    // Null until InitializeAsync has started the container. `ApiFactory?`
+    // says so honestly, instead of pretending with `= null!`.
+    private ApiFactory? _factory;
+
+    // Tests use this. `??` + throw: if setup failed and a test still asks,
+    // it gets a message that names the real cause instead of a
+    // NullReferenceException. `=>` makes it a computed property: the
+    // expression runs on every read, like a getter in TypeScript.
+    public ApiFactory Factory =>
+        _factory ?? throw new InvalidOperationException(
+            "The Postgres test container didn't start. Is Docker running? See the first error in the test output.");
 
     public async Task InitializeAsync()
     {
         // Pulls the image if needed (only the first time on a machine), starts
         // the container, and waits until Postgres accepts connections.
+        // If Docker isn't running, Testcontainers fails even earlier, while
+        // building the container (the field above), with
+        // DockerUnavailableException: "Failed to connect to Docker endpoint".
         await _container.StartAsync();
 
-        Factory = new ApiFactory(_container.GetConnectionString());
+        _factory = new ApiFactory(_container.GetConnectionString());
 
         // Apply every migration, the same way `dotnet ef database update`
         // does on your Mac. The AppDbContext comes from the app's own
@@ -56,7 +66,14 @@ public sealed class PostgresFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
-        await Factory.DisposeAsync();
+        // xUnit calls this even when InitializeAsync failed part way. Only
+        // dispose what was created, so cleanup never adds a second error on
+        // top of the real one. (Found by /code-review on PR #4.)
+        if (_factory is not null)
+        {
+            await _factory.DisposeAsync();
+        }
+
         await _container.DisposeAsync(); // stops and deletes the container
     }
 }

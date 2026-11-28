@@ -91,7 +91,7 @@ No C# from you this milestone (your code starts in M3). You run the commands whe
 | `Integration/RootEndpointTests.cs`     | integration | `GET /` through `WebApplicationFactory` (M0's Z4), the simplest example of the pattern, commented line by line                                                                                                                               |
 | `mobile/__tests__/api-status.test.tsx` | unit        | B15, B16: connected, unreachable on a network error, unreachable on a 503, "Checking…" first, and the missing-URL message                                                                                                                    |
 
-**On a machine without Docker running,** the integration tests fail with a clear "Docker isn't running" message rather than a timeout. The hook never runs them, so committing never needs Docker.
+**On a machine without Docker running,** the integration tests fail at once (no timeout) with Testcontainers' `DockerUnavailableException: Failed to connect to Docker endpoint at …`, inside an `AggregateException`. Look for that line. The hook never runs them, so committing never needs Docker.
 
 ## Claude Code hooks (the M2 skill)
 
@@ -114,7 +114,7 @@ Your git hook runs when **you** commit. A **Claude Code hook** runs when **I** u
 | `drizzle-kit migrate`                                  | `dotnet ef database update`                                                                                                                                                                     |
 | `drizzle/meta/_journal.json`                           | `__EFMigrationsHistory` (in the database) + `AppDbContextModelSnapshot.cs` (in the repo)                                                                                                        |
 | A long-running Docker test database                    | Testcontainers: a fresh, throwaway Postgres for each test run, started from the tests                                                                                                           |
-| Vitest `globalSetup`                                   | An xUnit assembly fixture, shared by every test class                                                                                                                                           |
+| Vitest `globalSetup`                                   | An xUnit collection fixture (`PostgresCollection`), shared by every test class that joins it. xUnit 2 has no once-per-run fixture.                                                              |
 | Calling a server action in a test with a faked session | `WebApplicationFactory`: real HTTP requests to the real app, in memory                                                                                                                          |
 | `next dev` on `localhost:3000`                         | The API on `0.0.0.0:5080`, because the client is a phone, not a browser on the same machine                                                                                                     |
 
